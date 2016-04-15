@@ -23,6 +23,8 @@ class EthernetFrame(BaseFrame):
         self.nextFrame = None
         if self.frameType == '0x0800':
             self.nextFrame = IPv4Header(self.nextData)
+        elif self.frameType == '0x0806':
+            self.nextFrame = ARPHeader(self.nextData)
    
     def dump(self):
         self.printTitle()
@@ -48,8 +50,8 @@ class IPv4Header(BaseFrame):
         self.df = int(packet[3].encode('hex'), 16) >> 14 & 0x01
         self.mf = int(packet[3].encode('hex'), 16) >> 13 & 0x01
         self.fragmentOffset = int(packet[3].encode('hex'), 16) & 0x1fff
-        self.ttl = (int(packet[4].encode('hex'), 16) >> 8)
-        self.protocol = (int(packet[4].encode('hex'), 16) &0xff)
+        self.ttl = (int(packet[4].encode('hex'), 16) >> 8 & 0xff)
+        self.protocol = (int(packet[4].encode('hex'), 16) & 0xff)
         self.serviceType = (int(packet[0].encode('hex'),16) >> 2 ) & 0x3f
  
     def dump(self):
@@ -68,6 +70,32 @@ class IPv4Header(BaseFrame):
         print "Header Checksum :", self.checksum
         print "Source IP Address :", self.sourceIp
         print "Destination IP Address :", self.destIp       
+
+class ARPHeader(BaseFrame):
+    def __init__(self, buf):
+        self.name = 'Address Resolution Protocol'
+        packet = struct.unpack("!2s2s2s2s6s4s6s4s", buf[0:28])
+        self.HardwareType = int(packet[0].encode('hex'), 16)
+        self.ProtocolType = int(packet[1].encode('hex'), 16)
+        self.text = packet[2].encode('hex')
+        self.HLEN = int(packet[2].encode('hex'), 16) >>8 & 0xff
+        self.PLEN = (int(packet[2].encode('hex'), 16)) & 0xff
+        self.operation = int(packet[3].encode('hex'), 16)
+        self.SHA =  ':'.join([packet[4].encode('hex')[x:x+2] for x in range(0, len(packet[4].encode('hex')), 2)])
+        self.SPA = socket.inet_ntoa(packet[5]) 
+        self.THA = ':'.join([packet[6].encode('hex')[x:x+2] for x in range(0, len(packet[6].encode('hex')), 2)])
+        self.TPA = socket.inet_ntoa(packet[7])       
+    def dump(self):
+        self.printTitle()
+        print 'Hardware Type :', self.HardwareType
+        print 'Protocol Type :', self.ProtocolType
+        print 'Hardware Length :', self.HLEN
+        print 'Protocol Length :', self.PLEN
+        print 'Operation :', self.operation
+        print 'Source Hardware address :', self.SHA
+        print 'Source Protocol address :', self.SPA
+        print 'Destination Hardware address :', self.THA
+        print 'Destination Protocol address :', self.TPA
 
 
 if __name__ == '__main__':
