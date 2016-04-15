@@ -2,9 +2,20 @@ import socket
 import struct
 import sys
 
-class EthernetFrame(object):
+class BaseFrame(object):
+    def __init__(self):
+        pass
+
+    def printTitle(self):
+        print "==========================="
+        print self.name
+        print "==========================="
+
+
+class EthernetFrame(BaseFrame):
     def __init__(self, buf):
         packet = struct.unpack("!6s6s2s", buf[0][0:14])
+        self.name = "Ethernet II"
         self.nextData = buf[0][14:]        
         self.dstMac = ':'.join([packet[0].encode('hex')[x:x+2] for x in range(0, len(packet[0].encode('hex')), 2)])
         self.srcMac = ':'.join([packet[1].encode('hex')[x:x+2] for x in range(0, len(packet[1].encode('hex')), 2)])
@@ -14,9 +25,7 @@ class EthernetFrame(object):
             self.nextFrame = IPv4Header(self.nextData)
    
     def dump(self):
-        print "==========================="
-        print "Ethernet II"
-        print "==========================="
+        self.printTitle()
         print "Destination MAC Address : ", self.dstMac
         print "Source MAC Address : ", self.srcMac
         print "Type : ", self.frameType
@@ -24,7 +33,7 @@ class EthernetFrame(object):
         if self.nextFrame is not None:
             self.nextFrame.dump()
 
-class IPv4Header(object):
+class IPv4Header(BaseFrame):
     def __init__(self, buf):
         packet = struct.unpack("!2s2s2s2s2s2s4s4s", buf[0:20])
         self.totalLength = int(packet[1].encode('hex'), 16)
@@ -43,9 +52,7 @@ class IPv4Header(object):
         self.serviceType = (int(packet[0].encode('hex'),16) >> 2 ) & 0x3f
  
     def dump(self):
-        print "==========================="
-        print "Internet Protocol Version 4"
-        print "==========================="
+        self.printTitle()
         print "Version :", self.version
         print "Header Length :", self.headerLength
         print "Service Type :", self.serviceType
@@ -60,7 +67,8 @@ class IPv4Header(object):
         print "Header Checksum :", self.checksum
         print "Source IP Address :", self.sourceIp
         print "Destination IP Address :", self.destIp       
- 
+
+
 if __name__ == '__main__':
     sock = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.ntohs(0x0003))
     while True:
