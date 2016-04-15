@@ -36,6 +36,7 @@ class EthernetFrame(BaseFrame):
 class IPv4Header(BaseFrame):
     def __init__(self, buf):
         packet = struct.unpack("!2s2s2s2s2s2s4s4s", buf[0:20])
+        self.name = "Internet Protocol Version 4"
         self.totalLength = int(packet[1].encode('hex'), 16)
         self.checksum = int(packet[5].encode('hex'), 16)
         self.sourceIp = socket.inet_ntoa(packet[6])
