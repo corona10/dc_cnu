@@ -57,6 +57,8 @@ class IPv4Header(BaseFrame):
         self.nextFrame = None
         if self.protocol == 6:
             self.nextFrame = TCPHeader(self.nextData)
+        elif self.protocol == 17:
+            self.nextFrame = UDPHeader(self.nextData)
  
     def dump(self):
         self.printTitle()
@@ -76,7 +78,7 @@ class IPv4Header(BaseFrame):
         print "Destination IP Address :", self.destIp
     
         if self.nextFrame is not None:
-            print self.nextFrame.dump()
+            self.nextFrame.dump()
 
 class ARPHeader(BaseFrame):
     def __init__(self, buf):
@@ -140,12 +142,25 @@ class TCPHeader(BaseFrame):
         print "Checksum :", self.checksum
         print "Urgent Pointer :", self.urgentPointer
 
+class UDPHeader(BaseFrame):
+    def __init__(self, buf):
+        self.name = "User Datagram Protocol"
+        packet = struct.unpack("!2s2s2s2s", buf[0:8])
+        self.SPA = int(packet[0].encode('hex'), 16)
+        self.DPA = int(packet[1].encode('hex'), 16)
+        self.length = int(packet[2].encode('hex'), 16)
+        self.checksum = "0x"+packet[3].encode('hex')
+ 
+    def dump(self):
+        self.printTitle()
+        print "Source Port address :", self.SPA
+        print "Destination Port addrss :", self.DPA
+        print "Total Length :", self.length
+        print "Checksum :", self.checksum
+
 if __name__ == '__main__':
     sock = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.ntohs(0x0003))
     while True:
         packet = sock.recvfrom(4096)
-        print "==========================="
-        print 'Frame size: ', sys.getsizeof(packet[0])
         eth_header = EthernetFrame(packet)
         t = eth_header.dump()
-        print "*****"
