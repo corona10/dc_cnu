@@ -40,20 +40,21 @@ class IPv4Header(BaseFrame):
         packet = struct.unpack("!2s2s2s2s2s2s4s4s", buf[0:20])
         self.nextData = buf[20:]
         self.name = "Internet Protocol Version 4"
-        self.totalLength = int(packet[1].encode('hex'), 16)
-        self.checksum = int(packet[5].encode('hex'), 16)
-        self.sourceIp = socket.inet_ntoa(packet[6])
-        self.destIp = socket.inet_ntoa(packet[7])
-        self.version = int(packet[0].encode('hex'), 16) >> 12
+        self.serviceType = (int(packet[0].encode('hex'),16) >> 2 ) & 0x3f
         self.headerLength= (int(packet[0].encode('hex'), 16) >> 8 & 0x0f)*4
+        self.version = int(packet[0].encode('hex'), 16) >> 12
+        self.totalLength = int(packet[1].encode('hex'), 16)
         self.identification = int(packet[2].encode('hex'), 16)
-        self.reserved = int(packet[3].encode('hex'), 16) >> 15
-        self.df = int(packet[3].encode('hex'), 16) >> 14 & 0x01
-        self.mf = int(packet[3].encode('hex'), 16) >> 13 & 0x01
+        self.reserved = (int(packet[3].encode('hex'), 16) >> 15) & 0x1
+        self.df = (int(packet[3].encode('hex'), 16) >> 14) & 0x1
+        self.mf = (int(packet[3].encode('hex'), 16) >> 13) & 0x1
         self.fragmentOffset = int(packet[3].encode('hex'), 16) & 0x1fff
         self.ttl = (int(packet[4].encode('hex'), 16) >> 8 & 0xff)
         self.protocol = (int(packet[4].encode('hex'), 16) & 0xff)
-        self.serviceType = (int(packet[0].encode('hex'),16) >> 2 ) & 0x3f
+        self.checksum = int(packet[5].encode('hex'), 16)
+        self.sourceIp = socket.inet_ntoa(packet[6])
+        self.destIp = socket.inet_ntoa(packet[7])
+
         self.nextFrame = None
         if self.protocol == 6:
             self.nextFrame = TCPHeader(self.nextData)
