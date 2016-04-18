@@ -120,7 +120,7 @@ class TCPHeader(BaseFrame):
         self.RST = (int(packet[4].encode('hex'), 16) >> 2) & 0x1
         self.SYN = (int(packet[4].encode('hex'), 16) >> 1) & 0x1
         self.FIN = (int(packet[4].encode('hex'), 16)) & 0x1
-        self.headerLength = 20 + (int(packet[4].encode('hex'), 16)>>4 & 0xf)
+        self.headerLength = (int(packet[4].encode('hex'), 16)>>4 & 0xf) * 4
         self.windowSize = int(packet[6].encode('hex'), 16)
         self.checksum = "0x"+packet[7].encode('hex')
         self.urgentPointer = int(packet[8].encode('hex'), 16)
