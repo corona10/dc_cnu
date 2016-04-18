@@ -113,7 +113,7 @@ class TCPHeader(BaseFrame):
         self.srcPort = int(packet[0].encode('hex'), 16)
         self.dstPort = int(packet[1].encode('hex'), 16)
         self.SEQ = int(packet[2].encode('hex'), 16)
-        self.ACK = int(packet[3].encode('hex'), 16)
+        self.ACKnumber = int(packet[3].encode('hex'), 16)
         self.URG = (int(packet[4].encode('hex'), 16) >> 5) & 0x1
         self.ACK = (int(packet[4].encode('hex'), 16) >> 4) & 0x1
         self.PSH = (int(packet[4].encode('hex'), 16) >> 3) & 0x1
@@ -130,7 +130,7 @@ class TCPHeader(BaseFrame):
         print "Source Port address :", self.srcPort
         print "Destination Port address :", self.dstPort
         print "Sequence Number :", self.SEQ
-        print "Acknowledgement Number :", self.ACK
+        print "Acknowledgement Number :", self.ACKnumber
         print "Header Length :", self.headerLength
         print "URG :", self.URG
         print "ACK :", self.ACK
