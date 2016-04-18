@@ -11,6 +11,8 @@ class BaseFrame(object):
         print self.name
         print "==========================="
 
+    def dump(self):
+        pass
 
 class EthernetFrame(BaseFrame):
     def __init__(self, buf):
@@ -42,7 +44,7 @@ class IPv4Header(BaseFrame):
         self.name = "Internet Protocol Version 4"
         self.serviceType = (int(packet[0].encode('hex'),16) >> 2 ) & 0x3f
         self.headerLength= (int(packet[0].encode('hex'), 16) >> 8 & 0x0f)*4
-        self.version = int(packet[0].encode('hex'), 16) >> 12
+        self.version = (int(packet[0].encode('hex'), 16) >> 12) & 0xf
         self.totalLength = int(packet[1].encode('hex'), 16)
         self.identification = int(packet[2].encode('hex'), 16)
         self.reserved = (int(packet[3].encode('hex'), 16) >> 15) & 0x1
