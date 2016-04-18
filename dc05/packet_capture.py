@@ -86,7 +86,6 @@ class ARPHeader(BaseFrame):
         packet = struct.unpack("!2s2s2s2s6s4s6s4s", buf[0:28])
         self.HardwareType = int(packet[0].encode('hex'), 16)
         self.ProtocolType = int(packet[1].encode('hex'), 16)
-        self.text = packet[2].encode('hex')
         self.HLEN = (int(packet[2].encode('hex'), 16) >>8) & 0xf
         self.PLEN = (int(packet[2].encode('hex'), 16)) & 0xf
         self.operation = int(packet[3].encode('hex'), 16)
