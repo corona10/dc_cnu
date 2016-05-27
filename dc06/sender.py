@@ -27,13 +27,13 @@ class FileFrame(object):
       if 'data' in kwargs:
          d = kwargs['data']
          self.size = len(d)
-         if len(d) < 256:
-            diff = 256 - len(d)
+         if len(d) < 1024:
+            diff = 1024 - len(d)
             d += "\0" * diff
          self.data = d
 
       if 'buf' in kwargs:
-         fmt = '!II256s'
+         fmt = '!II1024s'
          BUF = kwargs['buf']
          data = unpack(fmt, buf)
          self.ack = data[0]
@@ -42,7 +42,7 @@ class FileFrame(object):
          self.data = d[:self.size]
 
    def pack(self):
-      fmt = '!II256s'
+      fmt = '!II1024s'
       p = pack(fmt,self.ack, self.size ,self.data)
       return p
 
@@ -56,14 +56,14 @@ class FileInfoPacket(object):
          self.fileName = kwargs['fileName']
 
       if 'buf' in kwargs:
-         fmt = '!I256s'
+         fmt = '!I1024s'
          buf = kwargs['buf']
          data = unpack(fmt, buf)
          self.totalSize = data[0]
          self.fileName = data[1].replace('\x00','')
 
    def pack(self):
-      fmt = '!I256s'
+      fmt = '!I1024s'
       p = pack(fmt, self.totalSize, self.fileName)
       return p  
    
@@ -72,7 +72,7 @@ if __name__ == "__main__":
       print "[Dest IP Addr] [Dest Port] [File Path]"
       sys.exit()
    
-   buf = 256
+   buf = 1024
    ServerIP = sys.argv[1]
    ServerPort = int(sys.argv[2])
    filePath = sys.argv[3]
@@ -117,12 +117,9 @@ if __name__ == "__main__":
                else:
                   print "Ack Error!"
 
-         except socket.TimeoutError:
+         except socket.timeout:
             print 'Timed out'
 
-   except socket.error as e:
-      print e
-      sys.exit()
    finally:
-      sock.close()
       f.close()
+      sock.close()
