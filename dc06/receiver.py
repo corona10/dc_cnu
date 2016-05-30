@@ -104,6 +104,7 @@ if __name__ == "__main__":
    except socket.error as e:
       print e
       f.close()
+      sock.close()
       sys.exit()
    finally:
       f.close()

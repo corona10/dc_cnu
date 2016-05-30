@@ -80,7 +80,7 @@ if __name__ == "__main__":
    try:
       f = open(filePath, "rb")
       sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-      sock.settimeout(1.0)
+      sock.settimeout(0.001)
       addr = (ServerIP, ServerPort)
       
 
