@@ -71,7 +71,7 @@ class FileInfoPacket(object):
 
 def get_offset(idx):
    return idx*1024 
-  
+ 
 if __name__ == "__main__":
    if len(sys.argv) < 3:
       print "[Dest IP Addr] [Dest Port] [File Path]"
@@ -93,8 +93,10 @@ if __name__ == "__main__":
       fileSz = f.tell()
       total = fileSz / buf
       f.seek(0, 0)
-      dt = f.read(buf)
       sendSize = 0
+
+      numberOfFrame = fileSz/1024
+      endOfFrame = numberOfFrame%WINDOW_SIZE
 
       fName = os.path.basename(filePath)
       packet = FileInfoPacket(totalSize = fileSz, fileName = fName)
@@ -112,18 +114,19 @@ if __name__ == "__main__":
             packet = FileFrame(ack = ak, data = dt)
             p = packet.pack()
             send_buffer[ak] = p
-            print ak
+            sendSize = sendSize + len(dt)
             sock.sendto(p, addr)
          else:
             finish = True
 
-         if ak % WINDOW_SIZE == WINDOW_SIZE - 1:
+         if ak % WINDOW_SIZE == WINDOW_SIZE - 1 or ak == numberOfFrame:
             while(True):
                try:
                   sock.settimeout(0.001)
                   p, addr = sock.recvfrom(4)
                   AckOrNack = AckFrame(buf = p)
                   if AckOrNack.ack == ak + 1:
+                     print sendSize, '/', fileSz, '(current size / total size)', float(sendSize) / float(fileSz) * 100 ,'%'
                      break
                   else:
                      print "NACK ", AckOrNack.ack
@@ -133,6 +136,7 @@ if __name__ == "__main__":
                   print "Time out ouccured Resend!"
                   ak = ak - WINDOW_SIZE 
                   break
+
          ak = ak + 1
          if finish:
             break

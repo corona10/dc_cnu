@@ -6,7 +6,6 @@ from struct import *
 
 UDP_IP = ""
 UDP_PORT = 5005
-BUFFER_SIZE = 1472
 WINDOW_SIZE = 4
 
 class AckFrame(object):
@@ -84,6 +83,9 @@ if __name__ == "__main__":
    packet = FileInfoPacket(buf =packet)
    print packet.totalSize, packet.fileName
    totalSize = packet.totalSize
+   numberOfFrame = totalSize/1024
+   endOfFrame = numberOfFrame%WINDOW_SIZE
+   fullCompleted = False
    f = open('./'+packet.fileName , 'w')
    recv_buffer = dict()
    try:
@@ -92,12 +94,11 @@ if __name__ == "__main__":
       while True:
          data, addr = sock.recvfrom(1024+4+4)
          packet = FileFrame(buf = data) 
-         print packet.ack, get_offset(packet.ack)
          recv_buffer[packet.ack] = packet.data
-         print  packet.ack % WINDOW_SIZE, WINDOW_SIZE - 1
          if packet.ack % WINDOW_SIZE == WINDOW_SIZE - 1:
             while(True):
                finish = True
+               completedSize = 0
                for idx in range(packet.ack - WINDOW_SIZE +1, packet.ack+1):
                   if idx not in recv_buffer:
                      finish = False
@@ -106,13 +107,43 @@ if __name__ == "__main__":
                      sock.sendto(p, addr)
                      data, addr = sock.recvfrom(1024 + 4 + 4)
                      packet = FileFrame(buf = data)
-                     recv_buffer[ack] = packet.data
+                     recv_buffer[idx] = packet.data
+                  else:
+                    completedSize = completedSize + len(recv_buffer[idx])
                if finish:
+                  recvSize = recvSize + completedSize
                   packet= AckFrame(ack = packet.ack + 1)
                   p = packet.pack()
                   sock.sendto(p, addr)
+                  print recvSize, '/', totalSize, '(current size / total size)', float(recvSize) / float(totalSize) * 100 ,'%'
                   break
-
+         elif packet.ack == numberOfFrame:
+               while(True):
+                  finish = True
+                  completedSize = 0
+                  for idx in range(packet.ack - endOfFrame, packet.ack + 1):
+                     if idx not in recv_buffer:
+                        finish = False
+                        packet = AckFrame(ack = idx)
+                        p = packet.pack()
+                        sock.sendto(p, addr)
+                        data, addr = sock.recvfrom(1024 + 4 + 4)
+                        packet = FileFrame(buf = data)
+                        recv_buffer[idx] = packet.data
+                     else:
+                       completedSize = completedSize + len(recv_buffer[idx])
+                  if finish:
+                     recvSize = recvSize + completedSize
+                     packet= AckFrame(ack = packet.ack + 1)
+                     p = packet.pack()
+                     sock.sendto(p, addr)
+                     print recvSize, '/', totalSize, '(current size / total size)', float(recvSize) / float(totalSize) * 100 ,'%'
+                     fullCompleted = True
+                     break
+         if fullCompleted:
+            for idx in range(0, numberOfFrame+1):
+               f.write(recv_buffer[idx])
+            break    
    except socket.error as e:
       print e
       f.close()
@@ -121,5 +152,3 @@ if __name__ == "__main__":
    finally:
       f.close()
       sock.close()
-
-   f.close()
