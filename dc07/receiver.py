@@ -108,6 +108,7 @@ if __name__ == "__main__":
                      data, addr = sock.recvfrom(1024 + 4 + 4)
                      packet = FileFrame(buf = data)
                      recv_buffer[idx] = packet.data
+                     completedSize = 0
                   else:
                     completedSize = completedSize + len(recv_buffer[idx])
                if finish:
@@ -130,6 +131,7 @@ if __name__ == "__main__":
                         data, addr = sock.recvfrom(1024 + 4 + 4)
                         packet = FileFrame(buf = data)
                         recv_buffer[idx] = packet.data
+                        completedSize = 0
                      else:
                        completedSize = completedSize + len(recv_buffer[idx])
                   if finish:
