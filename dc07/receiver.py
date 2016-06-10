@@ -89,7 +89,6 @@ if __name__ == "__main__":
    f = open('./'+packet.fileName , 'w')
    recv_buffer = dict()
    try:
-      recvSize = 0
       ack = 0 
       while True:
          data, addr = sock.recvfrom(1024+4+4)
@@ -98,7 +97,6 @@ if __name__ == "__main__":
          if packet.ack % WINDOW_SIZE == WINDOW_SIZE - 1:
             while(True):
                finish = True
-               completedSize = 0
                for idx in range(packet.ack - WINDOW_SIZE +1, packet.ack+1):
                   if idx not in recv_buffer:
                      finish = False
@@ -108,20 +106,15 @@ if __name__ == "__main__":
                      data, addr = sock.recvfrom(1024 + 4 + 4)
                      packet = FileFrame(buf = data)
                      recv_buffer[idx] = packet.data
-                     completedSize = 0
-                  else:
-                    completedSize = completedSize + len(recv_buffer[idx])
+                 
                if finish:
-                  recvSize = recvSize + completedSize
                   packet= AckFrame(ack = packet.ack + 1)
                   p = packet.pack()
                   sock.sendto(p, addr)
-                  print recvSize, '/', totalSize, '(current size / total size)', float(recvSize) / float(totalSize) * 100 ,'%'
                   break
          elif packet.ack == numberOfFrame:
                while(True):
                   finish = True
-                  completedSize = 0
                   for idx in range(packet.ack - endOfFrame, packet.ack + 1):
                      if idx not in recv_buffer:
                         finish = False
@@ -131,19 +124,19 @@ if __name__ == "__main__":
                         data, addr = sock.recvfrom(1024 + 4 + 4)
                         packet = FileFrame(buf = data)
                         recv_buffer[idx] = packet.data
-                        completedSize = 0
-                     else:
-                       completedSize = completedSize + len(recv_buffer[idx])
+                   
                   if finish:
-                     recvSize = recvSize + completedSize
                      packet= AckFrame(ack = packet.ack + 1)
                      p = packet.pack()
                      sock.sendto(p, addr)
-                     print recvSize, '/', totalSize, '(current size / total size)', float(recvSize) / float(totalSize) * 100 ,'%'
                      fullCompleted = True
                      break
          if fullCompleted:
+            recvSize = 0
             for idx in range(0, numberOfFrame+1):
+               recvSize = recvSize + len(recv_buffer[idx])
+               print recvSize, '/', totalSize, '(current size / total size)', float(recvSize) / float(totalSize) * 100 ,'%'
+
                f.write(recv_buffer[idx])
             break    
    except socket.error as e:
