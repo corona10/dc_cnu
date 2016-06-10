@@ -2,6 +2,7 @@ import os
 import socket
 import sys
 import time
+import md5
 from struct import *
 
 WINDOW_SIZE = 4
@@ -26,6 +27,8 @@ class FileFrame(object):
    def __init__(self, *args, **kwargs):
       if 'ack' in kwargs:
          self.ack = kwargs['ack']
+      if 'checksum' in kwargs:
+         self.checksum = kwargs['checksum']
       if 'data' in kwargs:
          d = kwargs['data']
          self.size = len(d)
@@ -35,17 +38,18 @@ class FileFrame(object):
          self.data = d
 
       if 'buf' in kwargs:
-         fmt = '!II1024s'
+         fmt = '!II32s1024s'
          BUF = kwargs['buf']
          data = unpack(fmt, buf)
          self.ack = data[0]
          self.size = data[1]
-         d= data[2]
+         self.checksum = data[2]
+         d= data[3]
          self.data = d[:self.size]
 
    def pack(self):
-      fmt = '!II1024s'
-      p = pack(fmt,self.ack, self.size ,self.data)
+      fmt = '!II32s1024s'
+      p = pack(fmt,self.ack, self.size,self.checksum,self.data)
       return p
 
 class FileInfoPacket(object):
@@ -111,12 +115,12 @@ if __name__ == "__main__":
          finish = False
          f.seek(get_offset(ak))
          dt = f.read(buf)
+         crc = md5.md5(dt).hexdigest()
          if dt:
-            packet = FileFrame(ack = ak, data = dt)
+            packet = FileFrame(ack = ak, data = dt, checksum = crc)
             p = packet.pack()
             send_buffer[ak] = p 
             sent[ak] = packet.size
-            #print ak, numberOfFrame
             sock.sendto(p, addr)
          else:
             finish = True

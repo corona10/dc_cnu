@@ -3,6 +3,7 @@ import socket
 import sys
 import time
 from struct import *
+import md5
 
 UDP_IP = ""
 UDP_PORT = 5005
@@ -22,33 +23,37 @@ class AckFrame(object):
       fmt = "!I"
       p = pack(fmt, self.ack)
       return p
-
+       
 class FileFrame(object):
-   
+
    def __init__(self, *args, **kwargs):
       if 'ack' in kwargs:
          self.ack = kwargs['ack']
+      if 'checksum' in kwargs:
+         self.checksum = kwargs['checksum']
       if 'data' in kwargs:
          d = kwargs['data']
          self.size = len(d)
          if len(d) < 1024:
             diff = 1024 - len(d)
-            d += '\0' * diff
+            d += "\0" * diff
          self.data = d
 
       if 'buf' in kwargs:
-         fmt = '!II1024s'
+         fmt = '!II32s1024s'
          buf = kwargs['buf']
          data = unpack(fmt, buf)
          self.ack = data[0]
          self.size = data[1]
-         d= data[2]
+         self.checksum = data[2]
+         d= data[3]
          self.data = d[:self.size]
 
    def pack(self):
-      fmt = '!II1024s'
-      p = pack(fmt, self.ack,self.size, self.data)
+      fmt = '!II32s1024s'
+      p = pack(fmt,self.ack, self.size,self.checksum ,self.data)
       return p
+
 
 class FileInfoPacket(object):
 
@@ -91,9 +96,10 @@ if __name__ == "__main__":
    try:
       ack = 0 
       while True:
-         data, addr = sock.recvfrom(1024+4+4)
-         packet = FileFrame(buf = data) 
-         recv_buffer[packet.ack] = packet.data
+         data, addr = sock.recvfrom(1024+4+4 + 32)
+         packet = FileFrame(buf = data)
+         if md5.md5(packet.data).hexdigest() == packet.checksum:
+            recv_buffer[packet.ack] = packet.data
          if packet.ack % WINDOW_SIZE == WINDOW_SIZE - 1:
             while(True):
                finish = True
@@ -103,9 +109,10 @@ if __name__ == "__main__":
                      packet = AckFrame(ack = idx)
                      p = packet.pack()
                      sock.sendto(p, addr)
-                     data, addr = sock.recvfrom(1024 + 4 + 4)
+                     data, addr = sock.recvfrom(1024 + 4 + 4 +32)
                      packet = FileFrame(buf = data)
-                     recv_buffer[idx] = packet.data
+                     if md5.md5(packet.data).hexdigest() == packet.checksum:
+                        recv_buffer[idx] = packet.data
                  
                if finish:
                   packet= AckFrame(ack = packet.ack + 1)
@@ -121,9 +128,11 @@ if __name__ == "__main__":
                         packet = AckFrame(ack = idx)
                         p = packet.pack()
                         sock.sendto(p, addr)
-                        data, addr = sock.recvfrom(1024 + 4 + 4)
+                        data, addr = sock.recvfrom(1024 + 4 + 4 + 32)
                         packet = FileFrame(buf = data)
-                        recv_buffer[idx] = packet.data
+                        if md5.md5(packet.data).hexdigest() == packet.checksum:
+                           recv_buffer[idx] = packet.data
+                  
                    
                   if finish:
                      packet= AckFrame(ack = packet.ack + 1)
