@@ -97,7 +97,7 @@ if __name__ == "__main__":
          if packet.ack % WINDOW_SIZE == WINDOW_SIZE - 1:
             while(True):
                finish = True
-               for idx in range(packet.ack - WINDOW_SIZE +1, packet.ack):
+               for idx in range(packet.ack - WINDOW_SIZE +1, packet.ack +1):
                   if idx not in recv_buffer:
                      finish = False
                      packet = AckFrame(ack = idx)
