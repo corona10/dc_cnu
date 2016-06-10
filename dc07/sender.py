@@ -104,6 +104,7 @@ if __name__ == "__main__":
       sock.sendto(p, addr)
 
       send_buffer = dict()
+      sent = dict()
       ak = 0
 
       while(True):
@@ -113,8 +114,9 @@ if __name__ == "__main__":
          if dt:
             packet = FileFrame(ack = ak, data = dt)
             p = packet.pack()
-            send_buffer[ak] = p
-            sendSize = sendSize + len(dt)
+            send_buffer[ak] = p 
+            sent[ak] = packet.size
+            #print ak, numberOfFrame
             sock.sendto(p, addr)
          else:
             finish = True
@@ -126,11 +128,15 @@ if __name__ == "__main__":
                   p, addr = sock.recvfrom(4)
                   AckOrNack = AckFrame(buf = p)
                   if AckOrNack.ack == ak + 1:
+                     sendSize = 0
+                     for idx in range(0, ak+1):
+                         sendSize = sendSize + sent[idx]
                      print sendSize, '/', fileSz, '(current size / total size)', float(sendSize) / float(fileSz) * 100 ,'%'
                      break
                   else:
-                     print "NACK ", AckOrNack.ack
-                     sock.sendto(send_buffer[AckOrNack.ack], addr)
+                     if AckOrNack.ack <= numberOfFrame:
+                        print "NACK ", AckOrNack.ack
+                        sock.sendto(send_buffer[AckOrNack.ack], addr)
 
                except socket.timeout:
                   print "Time out ouccured Resend!"
