@@ -126,12 +126,14 @@ if __name__ == "__main__":
             finish = True
 
          if ak % WINDOW_SIZE == WINDOW_SIZE - 1 or ak == numberOfFrame:
+            old_ak = ak
             while(True):
                try:
                   sock.settimeout(0.001)
                   p, addr = sock.recvfrom(4)
                   AckOrNack = AckFrame(buf = p)
                   if AckOrNack.ack == ak + 1:
+                     print 'ACK'
                      sendSize = 0
                      for idx in range(0, ak+1):
                          sendSize = sendSize + sent[idx]
@@ -143,9 +145,9 @@ if __name__ == "__main__":
                         sock.sendto(send_buffer[AckOrNack.ack], addr)
 
                except socket.timeout:
-                  print "Time out ouccured Resend!"
-                  ak = ak - WINDOW_SIZE 
+                  ak = old_ak -1
                   break
+                  #print "Time out ouccured Resend!" 
 
          ak = ak + 1
          if finish:
